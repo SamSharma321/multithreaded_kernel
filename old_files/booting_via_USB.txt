@@ -1,0 +1,4 @@
+cd -> Directory where your boot.asm present 
+sudo fdisk -l -> look for the USB disk 
+nasm -f bin ./boot.asm -o ./boot.bin 
+sudo dd if=boot.bin of=/dev/sdb

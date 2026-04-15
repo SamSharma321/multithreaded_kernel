@@ -1,0 +1,6 @@
+// Instructions to setup assembler on linux for the kernel development.
+sudo apt update
+sudo apt install nasm // assembler
+nasm -v // get version
+sudo apt install qemu-system-x86 // virtual machine - emulator
+qemu-system-x86_64 // opens a virtual machine

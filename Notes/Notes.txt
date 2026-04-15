@@ -1,0 +1,14 @@
+1. Printing hello world
+2. paging
+3. fetching data from the hard disk
+4. virtual to physical addressing mapping
+5. multi-threading
+6. memory cllocation
+7. Memory management system
+8. Loading binary and elf files (linux is elf files)
+
+
+NOTES:
+1. Running the GDT with protected mode:
+    sudo apt install gdb
+    target remote | qemu-system-x86_64 -hda ./boot.bin -S -gdb stdio
