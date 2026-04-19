@@ -1,8 +1,8 @@
 ; Print "BIOS Execution start..." on screen using a USB stick
 ; BIOS starts execution from address 0x7c00
 ; 0x7c0 is the boot sector
-ORG 0x7c00              ; Origin to 0
-BITS 16                 ; 16 bit architecture
+ORG 0x7c00               ; Origin to 0
+BITS 16                  ; 16 bit architecture
 
 CODE_SEG equ gdt_end - gdt_start        ; Offsets of CS
 DATA_SEG equ gdt_data - gdt_start       ; Offset of DS, ES, SS, etc
@@ -11,19 +11,20 @@ DATA_SEG equ gdt_data - gdt_start       ; Offset of DS, ES, SS, etc
 _start:
     jmp short start
     nop
-times 33 db 0           ; 33 bytes of 0's padding for the BPB filling
+times 33 db 0            ; 33 bytes of 0's padding for the BPB filling
 
-start:                  ; start label
+start:                   ; start label
     jmp 0:step2
 
 step2:
-    cli                 ; Clear Interrupts before setting segment registers
-    mov ax, 0x7c0       ; Can't be fed into the ds or es directly
-    mov ds, ax          ; data segment now points at address 0x7c00
-    mov es, ax          ; Real mode execution: physical = segment * 16 + offset
-    mov ss, ax          ; Stack segment starts from 0x00
-    mov sp, 0x7c00      ; Stack pointer starts from the base of stack segment always -> grows downwards.
-    sti                 ; Enables Interupts
+    cli                  ; Clear Interrupts before setting segment registers
+    mov ax, 0x7c0        ; Can't be fed into the ds or es directly
+    mov ds, ax           ; data segment now points at address 0x7c00
+    mov es, ax           ; Real mode execution: physical = segment * 16 + offset
+    mov ss, ax           ; Stack segment starts from 0x00
+    mov sp, 0x7c00       ; Stack pointer starts from the base of stack segment always -> grows downwards.
+    sti                  ; Enables Interupts
+
 
 ; ***************** PROTECTED MODE *****************
 ; https://wiki.osdev.org/Protected_Mode
@@ -34,6 +35,7 @@ step2:
     or eax, 0x1
     mov cr0, eax
     jmp CODE_SEG:load32  ; CODE_SEG is 0x8h
+    jmp $
 
 
 ; ***************** GLOBAL DESCRIPTOR TABLE ****************
@@ -68,24 +70,13 @@ gdt_descriptor:
     dw gdt_end - gdt_start - 1 ; Size of descriptor table
     dd gdt_start        ; dd - define double word, dw - define word
 
-; PROTECTED MODE execution - 32 bit mode
-[BITS 32]               ; All code under this macro is interpretted as 32 bit code
+
+[BITS 32]               ; Start of 32 bit architecture
 load32:
-    mov ax, DATA_SEG
-    mov ds, ax          ; Initializing DS, SS< FS, ED, GS
-    mov es, ax
-    mov fs, ax
-    mov gs, ax
-    mov ss, ax
-    mov ebp, 0x00200000  ; Set the base pointer to point to this location
-    mov esp, ebp        ; set stack pointer to base pointer
-
-    ; enable A20 - accessing 21st bit of every memory access
-    in al, 0x92
-    or al, 2
-    out 0x92, al
-
-    jmp $
+    mov eax, 1          ; staring sector to load - 1, 0 is the boot sector
+    mov ecx, 100        ; total sectors to load
+    mov edi, 0x0100000  ; address to load the segment into
+    call ata_lba_read   ; talk with the drive load sector into memory
 
 
 ; Boot signature

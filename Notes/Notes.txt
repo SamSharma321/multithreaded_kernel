@@ -12,3 +12,6 @@ NOTES:
 1. Running the GDT with protected mode:
     sudo apt install gdb
     target remote | qemu-system-x86_64 -hda ./boot.bin -S -gdb stdio
+
+2. Cross compiler - dependencies install link: https://wiki.osdev.org/GCC_Cross-Compiler
+3. Install gcc 10.2
