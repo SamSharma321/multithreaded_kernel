@@ -1,6 +1,8 @@
 ; Kernel - Protected Mode - 32 bits
 [BITS 32]               ; All code under this macro is interpretted as 32 bit code
+
 global _start           ; exports the _start symbol
+extern kernel_main
 CODE_SEG equ 0x08
 DATA_SEG equ 0x10
 
@@ -19,4 +21,9 @@ _start:
     or al, 2
     out 0x92, al
 
+    call kernel_main
+
     jmp $
+
+; Aligning the kernel image for aligned access - 512 byte alignment
+times 512-($ - $$) db 0 

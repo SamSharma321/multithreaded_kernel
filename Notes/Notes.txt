@@ -15,3 +15,8 @@ NOTES:
 
 2. Cross compiler - dependencies install link: https://wiki.osdev.org/GCC_Cross-Compiler
 3. Install gcc 10.2
+
+GDB:
+* Using gdb - loading symbols command: add-symbol-file ../build/kernelfull.o 0x100000 -> 0x100000 is staring address of kernel file
+* break _start -> stops at _start routine
+* target remote | qemu-system-x86_64 -hda ./os.bin -gdb stdio -S
