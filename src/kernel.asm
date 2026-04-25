@@ -2,7 +2,7 @@
 [BITS 32]               ; All code under this macro is interpretted as 32 bit code
 
 global _start           ; exports the _start symbol
-extern kernel_main
+extern kernel_main      ; when the function is defined elsewhere you use extern, and when you define it in the asm file, you use global
 CODE_SEG equ 0x08
 DATA_SEG equ 0x10
 
@@ -21,7 +21,18 @@ _start:
     or al, 2
     out 0x92, al
 
-    call kernel_main
+    ; Remap the master Programmable Interrupt controller (PIC)
+    mov al, 00010001b
+    out 0x20, al        ; Tell master PIC
+
+    mov al, 0x20        ; Interrupt 0x20 is where master ISR should start
+    out 0x21, al
+    
+    mov al, 0x00000001b
+    out 0x21, al
+    ; End remap of the master PIC
+
+    call kernel_main    ; Enter C Code B)
 
     jmp $
 
