@@ -3,7 +3,7 @@ TARGET = i686-elf
 CC = $(shell if command -v $(TARGET)-gcc >/dev/null 2>&1; then echo $(TARGET)-gcc; else echo gcc -m32; fi)
 LD = $(PREFIX)/bin/$(TARGET)-ld
 
-FILES = ./build/kernel.asm.o ./build/kernel.o ./build/idt/idt.asm.o ./build/memory/memory.o ./build/idt/idt.o ./build/io/io.asm.o ./build/io/io.o
+FILES = ./build/kernel.asm.o ./build/kernel.o ./build/idt/idt.asm.o ./build/memory/memory.o ./build/idt/idt.o ./build/io/io.asm.o ./build/io/io.o ./build/memory/heap/heap.o ./build/memory/heap/kheap.o
 INCLUDES = -I./src
 CFLAGS = -g -ffreestanding -fno-pic -fno-pie -falign-jumps -falign-functions -falign-labels -falign-loops -fstrength-reduce -fomit-frame-pointer -finline-functions -Wno-unused-function -fno-builtin -Werror -Wno-unused-label -Wno-cpp -Wno-unused-parameter -nostdlib -nostartfiles -nodefaultlibs -Wall -O0 -Iinc
 
@@ -42,6 +42,12 @@ all: ./bin/boot.bin ./bin/kernel.bin
 ./build/memory/memory.o: ./src/memory/memory.c
 	$(CC) $(INCLUDES) -I./src/memory $(CFLAGS) -std=gnu99 -c ./src/memory/memory.c -o ./build/memory/memory.o
 
+./build/memory/heap/heap.o: ./src/memory/heap/heap.c
+	$(CC) $(INCLUDES) -I./src/memory/heap $(CFLAGS) -std=gnu99 -c ./src/memory/heap/heap.c -o ./build/memory/heap/heap.o
+
+./build/memory/heap/kheap.o: ./src/memory/heap/kheap.c
+	$(CC) $(INCLUDES) -I./src/memory/heap $(CFLAGS) -std=gnu99 -c ./src/memory/heap/kheap.c -o ./build/memory/heap/kheap.o
+
 clean:
 	rm -rf ./bin/boot.bin
 	rm -rf ./bin/kernel.bin
@@ -51,3 +57,6 @@ clean:
 	rm -rf ./build/kernel.o
 	rm -rf ./build/io/io.asm.o
 	rm -rf ./build/io/io.o
+	rm -rf ./build/memory/memory.o
+	rm -rf ./build/memory/heap/heap.o
+	rm -rf ./build/memory/heap/kheap.o
