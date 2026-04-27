@@ -19,6 +19,7 @@ struct idtr_desc {
 
 /* Function Prototypes */
 void idt_init();
-
+void enable_interrupts();
+void disable_interrupt();
 
 #endif

@@ -3,6 +3,7 @@
 #include <stddef.h>
 #include <idt/idt.h>
 #include "io/io.h"
+#include "memory/heap/kheap.h"
 
 /* Predefined Macros */
 #define VIDEO_MEM_ADDRESS ((volatile uint16_t*)0xB8000)
@@ -72,16 +73,11 @@ void print(const char* str) {
 void kernel_main() {
     terminal_initialize();
     print("SAMOS: System booted successfully!\n");
+    // Initialize kernel heap
+    kheap_init();
     // Initializing IDT
     idt_init();
-
-    // __asm__ ("sti");
-    /* Simulating Divide by zero error
-    int j = 0;
-    int i = 10/j;
-    print((char*)&i); */
-
-
-
+    // enable interrupts
+    enable_interrupts();
     return;
 }

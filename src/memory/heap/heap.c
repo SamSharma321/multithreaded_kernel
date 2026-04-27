@@ -5,7 +5,7 @@
 #include "memory/memory.h"
 
 static bool validate_alignment(void* ptr) {
-    return ((unsigned int)ptr % SAMOS_HEAP_BLOCK_SIZE == 0);
+    return ((unsigned int)ptr % SAMOS_HEAP_BLOCK_SIZE != 0);
 }
 
 static int heap_validate_table(void* start, void* end, struct heap_table* h_table) {
@@ -15,18 +15,15 @@ static int heap_validate_table(void* start, void* end, struct heap_table* h_tabl
     if (total_blocks != h_table->total)
         return -EINVARG;
 
-    
-
     return SAMOS_ALL_OK;
 }
 
 int heap_create(struct heap* heap, void* start_ptr, void* end, struct heap_table* h_table) {
-    if (validate_alignment(start_ptr) || validate_alignment(end)) {
-        return -EINVARG;
-    }
-
     if ((heap == NULL) || (start_ptr == NULL) || (h_table == NULL)) {
         return -EIO;
+    }
+    if (validate_alignment(start_ptr) || validate_alignment(end)) {
+        return -EINVARG;
     }
     if ((HEAP_BLOCK_TABLE_ENTRY*)end < (HEAP_BLOCK_TABLE_ENTRY*)start_ptr) {
         return -EIO;
@@ -58,7 +55,7 @@ static int heap_get_start_block(struct heap* heap, uint32_t total_blocks) {
     int bc = 0;
     int bs = -1;
 
-    for (int i = 0; i < table->total; i++) {
+    for (int i = 0; i < table->total; i++) {    // continuous windowing technique
         if ((table->entries[i] & 0x0Fu) != HEAP_BLOCK_TABLE_ENTRY_FREE) {
             bc = 0;
             bs = -1;
@@ -70,16 +67,32 @@ static int heap_get_start_block(struct heap* heap, uint32_t total_blocks) {
         }
         bc++;
 
-        if (bc = total_blocks) {
+        if (bc == total_blocks) {
             break;
         }
+    }
+
+    if (bs == -1) {
+        return -ENOMEM;
     }
 
     return bs;
 }
 
-void* heap_to_block_address(struct heap* heap, uint32_t start_block) {
-    return (HEAP_BLOCK_TABLE_ENTRY)(heap->addr) + (start_block * SAMOS_HEAP_BLOCK_SIZE);
+static void* heap_block_to_address(struct heap* heap, uint32_t start_block) {
+    return (heap->addr) + (start_block * SAMOS_HEAP_BLOCK_SIZE);
+}
+
+static void heap_mark_blocks_taken(struct heap* heap, int start_block, uint32_t total_blocks) {
+    struct heap_table* table = heap->h_table;
+
+    for (int i = start_block; i < start_block + total_blocks; i++) {
+        table->entries[i] = HEAP_BLOCK_TABLE_ENTRY_TAKEN;
+        if (i + 1 < start_block + total_blocks) {
+            table->entries[i] |= HEAP_BLOCK_HAS_NEXT;
+        }
+    }
+    table->entries[start_block] |= (HEAP_BLOCK_IS_FIRST);
 }
 
 void* heap_malloc_blocks(struct heap* heap, uint32_t total_blocks) {
@@ -100,7 +113,36 @@ void* heap_malloc(struct heap* heap, size_t size) {
     return heap_malloc_blocks(heap, total_blocks);
 }
 
+void heap_free(struct heap* heap, void* ptr) {
+    if (ptr == NULL)
+        return; // Do nothing
 
-void heap_free(struct heap* heap) {
+    if (ptr < heap->addr)
+        return;
+
+    if (validate_alignment(ptr)) {
+        return;
+    }
+
+    // get the table entry start position
+    int start_index = ((uintptr_t)ptr - (uintptr_t)heap->addr) / SAMOS_HEAP_BLOCK_SIZE;
+    if (start_index < 0 || (size_t)start_index >= heap->h_table->total) {
+        return;
+    }
+
+    if ((heap->h_table->entries[start_index] & HEAP_BLOCK_IS_FIRST) == 0) {
+        return;
+    }
+
+    int idx = start_index;
+    HEAP_BLOCK_TABLE_ENTRY* entries = heap->h_table->entries;
+    while (idx < heap->h_table->total) {
+        if ((entries[idx] & HEAP_BLOCK_HAS_NEXT) == 0) {
+            // Last block to free -> then break
+            entries[idx++] = HEAP_BLOCK_TABLE_ENTRY_FREE;
+            break;
+        }
+        entries[idx++] = HEAP_BLOCK_TABLE_ENTRY_FREE;
+    }
     return;
 }
