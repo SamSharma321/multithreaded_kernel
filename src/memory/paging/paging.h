@@ -3,6 +3,7 @@
 
 #include <stddef.h>
 #include <stdint.h>
+#include <stdbool.h>
 
 #define PAGING_CACHE_DISABLED   0b00010000      // Bit mask to disable page caching
 #define PAGING_WRITE_THROUGH    0b00001000
@@ -24,6 +25,8 @@ struct paging_4gb_chunk* paging_new_4gb(uint8_t flags);
 uint32_t* pagin_4gb_chunk_get_directory(struct paging_4gb_chunk* chunk_4gb);
 void paging_switch(uint32_t* directory);
 void enable_paging();
-
+int paging_set(uint32_t* directory, void* VA, uint32_t PA);
+int paging_get_index(void* virtual_address, uint32_t* directory_index_out, uint32_t* table_index_out);
+bool paging_is_aligned(void* address);
 
 #endif

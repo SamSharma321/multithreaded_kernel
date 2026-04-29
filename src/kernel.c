@@ -83,8 +83,6 @@ void kernel_main() {
     /********** INTERRUPT SECTION **********/
     // Initializing IDT
     idt_init();
-    // enable interrupts
-    enable_interrupts();
 
     /******* PAGING SECTION  */
     // Flags -> Write back + 4 Kb page + Readable + Supervisor only + Cacheable
@@ -93,6 +91,19 @@ void kernel_main() {
     paging_switch(pagin_4gb_chunk_get_directory(kernel_chunk));
     // enable paging
     enable_paging();
+
+    /* Example for accessing and writing data using virtual address */
+    char* ptr = kzalloc(4096); // This is the physical address
+    // 4096 byte aligned - lower bits will be 0's
+    uint32_t VA_start = 0x1000;
+    paging_set(pagin_4gb_chunk_get_directory(kernel_chunk), (void*)VA_start, (uint32_t)ptr | PAGING_ACCESS_FROM_ALL | PAGING_IS_PRESENT | PAGING_IS_WRITABLE);
+    char* ptr2 = (char*)VA_start; // VA set above
+    char* str[] = "Virtual Address enabled\n";
+    memcpy(ptr2, str, 24);  // copying to virtual address
+    print(ptr2);
+
+    // enable interrupts
+    enable_interrupts();
     
     return;
 }

@@ -1,5 +1,6 @@
 #include <paging.h>
 #include "memory/heap/kheap.h"
+#include "status.h"
 
 // Current operating directory
 static uint32_t* current_directory = 0;
@@ -42,3 +43,35 @@ uint32_t* pagin_4gb_chunk_get_directory(struct paging_4gb_chunk* chunk_4gb) {
     return chunk_4gb->directory_entry;
 }
 
+bool paging_is_aligned(void* address) {
+    return (((uintptr_t)address % PAGING_PAGE_SIZE) == 0);
+}
+
+int paging_get_index(void* virtual_address, uint32_t* directory_index_out, uint32_t* table_index_out) {
+    if (!paging_is_aligned(virtual_address)) {
+        return -EINVARG;
+    }
+    // Here VA = PA since it is linearly mapped - so no resolution
+    // Resolve the VA into directory entry and table index
+    *directory_index_out = (uint32_t)virtual_address / (PAGING_TOTAL_ENTRIES_PER_TABLE * PAGING_PAGE_SIZE);
+
+    *table_index_out = (uint32_t)virtual_address % \
+        (PAGING_TOTAL_ENTRIES_PER_TABLE * PAGING_PAGE_SIZE) / PAGING_PAGE_SIZE;
+
+    return 0;
+}
+
+int paging_set(uint32_t* directory, void* VA, uint32_t PA) {
+    uint32_t directory_index = 0;
+    uint32_t table_index = 0;
+
+    int status = paging_get_index(VA, &directory_index, &table_index);
+
+    if (status < 0) 
+        return status;
+
+    uint32_t entry = directory[directory_index];
+    uint32_t* table = (uint32_t*)(entry & 0xfffff000);
+    table[table_index] = PA;
+    return 0;
+}
