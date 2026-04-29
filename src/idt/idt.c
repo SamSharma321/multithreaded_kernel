@@ -50,7 +50,6 @@ void idt_init() {
     // idt_set(0x20, int21h); Timer INterrupt is 0x20
     idt_set(0x21, int21h);
 
-
     // Set handlers for other interrupts
     // The interrupts can be called from kernel.asm by simulating them
     // int xx where xx is the interrupt entry

@@ -4,6 +4,8 @@
 #include <idt/idt.h>
 #include "io/io.h"
 #include "memory/heap/kheap.h"
+#include "memory/paging/paging.h"
+
 
 /* Predefined Macros */
 #define VIDEO_MEM_ADDRESS ((volatile uint16_t*)0xB8000)
@@ -70,6 +72,8 @@ void print(const char* str) {
     }
 }
 
+static struct paging_4gb_chunk* kernel_chunk = 0;
+
 void kernel_main() {
     terminal_initialize();
     print("SAMOS: System booted successfully!\n");
@@ -79,5 +83,11 @@ void kernel_main() {
     idt_init();
     // enable interrupts
     enable_interrupts();
+    // Enable paging
+    // Flags -> Write back + 4 Kb page + Readable + Supervisor only + Cacheable
+    kernel_chunk = paging_new_4gb(PAGING_ACCESS_FROM_ALL | PAGING_IS_PRESENT | PAGING_IS_WRITABLE);
+    paging_switch(kernel_chunk->directory_entry);
+    enable_paging();
+    
     return;
 }
