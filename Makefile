@@ -63,6 +63,7 @@ clean:
 	rm -rf ./build/kernel.o
 	rm -rf ./build/io/io.asm.o
 	rm -rf ./build/io/io.o
+	rm -rf ./build/idt/idt.o
 	rm -rf ./build/memory/memory.o
 	rm -rf ./build/memory/heap/heap.o
 	rm -rf ./build/memory/heap/kheap.o

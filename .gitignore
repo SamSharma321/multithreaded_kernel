@@ -1,0 +1,12 @@
+build/kernel.asm.o
+bin/boot.bin
+build/idt/idt.o
+build/io/io.asm.o
+build/io/io.o
+build/kernel.o
+build/memory/heap/heap.o
+build/memory/heap/kheap.o
+build/memory/memory.o
+build/memory/paging/paging.asm.o
+build/idt/idt.o
+build/idt/idt.o
