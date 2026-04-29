@@ -38,7 +38,7 @@ void paging_switch(uint32_t* directory) {
     current_directory = directory;
 }
 
-static uint32_t* pagin_4gb_chunk_get_directory(struct paging_4gb_chunk* chunk_4gb) {
+uint32_t* pagin_4gb_chunk_get_directory(struct paging_4gb_chunk* chunk_4gb) {
     return chunk_4gb->directory_entry;
 }
 

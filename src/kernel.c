@@ -77,16 +77,21 @@ static struct paging_4gb_chunk* kernel_chunk = 0;
 void kernel_main() {
     terminal_initialize();
     print("SAMOS: System booted successfully!\n");
-    // Initialize kernel heap
+    /********** KERNEL HEAP ***********/
     kheap_init();
+
+    /********** INTERRUPT SECTION **********/
     // Initializing IDT
     idt_init();
     // enable interrupts
     enable_interrupts();
-    // Enable paging
+
+    /******* PAGING SECTION  */
     // Flags -> Write back + 4 Kb page + Readable + Supervisor only + Cacheable
     kernel_chunk = paging_new_4gb(PAGING_ACCESS_FROM_ALL | PAGING_IS_PRESENT | PAGING_IS_WRITABLE);
-    paging_switch(kernel_chunk->directory_entry);
+    // switch to kernel paging chunk
+    paging_switch(pagin_4gb_chunk_get_directory(kernel_chunk));
+    // enable paging
     enable_paging();
     
     return;
