@@ -9,5 +9,4 @@ unsigned short insw(unsigned short port);   // Word input via port
 void outb(unsigned short port, unsigned char val);  // Byte output via port
 void outw(unsigned short port, unsigned short val); // Word output via port
 
-
 #endif

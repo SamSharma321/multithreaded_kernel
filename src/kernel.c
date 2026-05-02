@@ -9,10 +9,10 @@
 
 /* Predefined Macros */
 #define VIDEO_MEM_ADDRESS ((volatile uint16_t*)0xB8000)
-#define BLUE_COLOR 1u
-#define GREEN_COLOR 2u
-#define BLACK_COLOR 0u
-#define WHITE_COLOR 15u
+#define BLUE_COLOR          1u
+#define GREEN_COLOR         2u
+#define BLACK_COLOR         0u
+#define WHITE_COLOR         15u
 
 /* Function Macros */
 /*! Macro to display a character in a particular color */

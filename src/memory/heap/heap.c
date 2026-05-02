@@ -20,7 +20,7 @@ static int heap_validate_table(void* start, void* end, struct heap_table* h_tabl
 
 int heap_create(struct heap* heap, void* start_ptr, void* end, struct heap_table* h_table) {
     if ((heap == NULL) || (start_ptr == NULL) || (h_table == NULL)) {
-        return -EIO;
+        return -EINVARG;
     }
     if (validate_alignment(start_ptr) || validate_alignment(end)) {
         return -EINVARG;

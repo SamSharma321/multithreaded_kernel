@@ -47,7 +47,7 @@ void idt_init() {
 
     // Divide by zero interrupt
     idt_set(0, idt_zero);
-    // idt_set(0x20, int21h); Timer INterrupt is 0x20
+    // idt_set(0x20, int21h); Timer Interrupt is 0x20
     idt_set(0x21, int21h);
 
     // Set handlers for other interrupts
