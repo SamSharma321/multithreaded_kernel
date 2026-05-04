@@ -17,10 +17,25 @@ int memcpy(void* dest, void* src, int bytes) {
     if ((!dest) || (!src))
         return -EINVARG;
 
-    char* dest_char = (uint8_t*)dest;
-    char* src_char = (uint8_t*)src;
+    uint8_t* dest_char = (uint8_t*)dest;
+    uint8_t* src_char = (uint8_t*)src;
     for (int i = 0; i < bytes; i++) {
         dest_char[i] = src_char[i];
     }
     return 0;
 }
+
+int memcmp(const void* src, const void* str, int len) {
+    if ((src == NULL) || (str == NULL))
+        return -EINVARG;
+
+    char* ptr1 = (char*)src;     // byte wise comparison
+    char* ptr2 = (char*)str;     // byte wise comparison
+    
+    while (len-- > 0) {
+        if (*(ptr1++) != *(ptr2++))
+            return ptr1[-1] < ptr2[-1] ? -1 : 1;
+    }
+    return 0;
+}
+

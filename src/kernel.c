@@ -5,7 +5,11 @@
 #include "io/io.h"
 #include "memory/heap/kheap.h"
 #include "memory/paging/paging.h"
-
+#include "memory/memory.h"
+#include "disk/disk.h"
+#include "string/string.h"
+#include "disk/streamer.h"
+#include "fs/pparser.h"
 
 /* Predefined Macros */
 #define VIDEO_MEM_ADDRESS ((volatile uint16_t*)0xB8000)
@@ -22,6 +26,8 @@
 volatile uint16_t* video_mem = 0;
 uint16_t terminal_row = 0u;
 uint16_t terminal_col = 0u;
+static struct paging_4gb_chunk* kernel_chunk = 0;
+
 
 void terminal_initialize() {
     terminal_row = 0;
@@ -35,18 +41,12 @@ void terminal_initialize() {
     return;
 }
 
+
 void terminal_putchar(int x, int y, char c, char color) {
     TERMINAL_DISPLAY(y, x) = CFG_CHAR_VIDEO(color, c);
     return;
 }
 
-size_t strlen(char* str) {
-    size_t len = 0;
-    while(str[len]) {
-        len++;
-    }
-    return len;
-}
 
 void terminal_writechar(char c, char color) {
     if (c == '\n') {
@@ -64,6 +64,7 @@ void terminal_writechar(char c, char color) {
     }
 }
 
+
 /*! @brief: Function to print a string to the display. */
 void print(const char* str) {
     terminal_writechar(*str, WHITE_COLOR);
@@ -72,18 +73,31 @@ void print(const char* str) {
     }
 }
 
-static struct paging_4gb_chunk* kernel_chunk = 0;
+
+static void enable_virtual_addressing() {
+    /* Example for accessing and writing data using virtual address */
+    char* ptr = kzalloc(4096); // This is the physical address
+    // 4096 byte aligned - lower bits will be 0's
+    uint32_t VA_start = 0x1000;
+    paging_set(pagin_4gb_chunk_get_directory(kernel_chunk), (void*)VA_start, (uint32_t)ptr | PAGING_ACCESS_FROM_ALL | PAGING_IS_PRESENT | PAGING_IS_WRITABLE);
+    char* ptr2 = (char*)VA_start; // VA set above
+    char str[] = "Virtual Address enabled\n";
+    memcpy(ptr2, str, 25);  // copying to virtual address
+    print(ptr2);
+}
+
 
 void kernel_main() {
     terminal_initialize();
     print("SAMOS: System booted successfully!\n");
     /********** KERNEL HEAP ***********/
     kheap_init();
-
+    /*********** DISK INIT ************/
+    // Serach and initialize the disk
+    disk_search_and_init();
     /********** INTERRUPT SECTION **********/
     // Initializing IDT
     idt_init();
-
     /******* PAGING SECTION  */
     // Flags -> Write back + 4 Kb page + Readable + Supervisor only + Cacheable
     kernel_chunk = paging_new_4gb(PAGING_ACCESS_FROM_ALL | PAGING_IS_PRESENT | PAGING_IS_WRITABLE);
@@ -91,19 +105,13 @@ void kernel_main() {
     paging_switch(pagin_4gb_chunk_get_directory(kernel_chunk));
     // enable paging
     enable_paging();
-
-    /* Example for accessing and writing data using virtual address */
-    char* ptr = kzalloc(4096); // This is the physical address
-    // 4096 byte aligned - lower bits will be 0's
-    uint32_t VA_start = 0x1000;
-    paging_set(pagin_4gb_chunk_get_directory(kernel_chunk), (void*)VA_start, (uint32_t)ptr | PAGING_ACCESS_FROM_ALL | PAGING_IS_PRESENT | PAGING_IS_WRITABLE);
-    char* ptr2 = (char*)VA_start; // VA set above
-    char* str[] = "Virtual Address enabled\n";
-    memcpy(ptr2, str, 24);  // copying to virtual address
-    print(ptr2);
-
+    enable_virtual_addressing();
     // enable interrupts
     enable_interrupts();
-    
+    /* Create Root path */
+    struct path_root* root = pathparser_parse("0:/bin/shell.exe", NULL);
+    if (root) {
+        print("Root path created (0)\n");
+    }
     return;
 }

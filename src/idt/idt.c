@@ -11,7 +11,11 @@ extern void int21h();
 extern void no_interrupt();
 
 void int21h_handler() {
-    print("Keyboard Pressed");
+    unsigned char scancode = insb(0x60);
+    if (!(scancode & 0x80)) {
+        // Only print when the button is released.
+        print("Keyboard Pressed\n");
+    }
     outb(0x20, 0x20);       // Acknowledge the PIC ISR
 }
 
@@ -45,9 +49,13 @@ void idt_init() {
     idtr_descriptor.limit = sizeof(idt_descriptors) - 1;
     idtr_descriptor.base = (uint32_t)&idt_descriptors[0];
 
+    for (int i = 0; i < SAMOS_TOTAL_INTERRUPTS; i++) {
+        idt_set(i, no_interrupt);
+    }
+
     // Divide by zero interrupt
     idt_set(0, idt_zero);
-    // idt_set(0x20, int21h); Timer Interrupt is 0x20
+    idt_set(0x20, no_interrupt);
     idt_set(0x21, int21h);
 
     // Set handlers for other interrupts

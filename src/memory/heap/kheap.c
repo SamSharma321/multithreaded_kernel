@@ -13,7 +13,7 @@ void kheap_init() {
     // Block size = 4096
 
     int total_heap_entries = SAMOS_HEAP_SIZE_BYTES / SAMOS_HEAP_BLOCK_SIZE;
-    kernel_heap_table.entries = (HEAP_BLOCK_TABLE_ENTRY*)SAMOS_HEAP_START_ADDR;
+    kernel_heap_table.entries = (HEAP_BLOCK_TABLE_ENTRY*)SAMOS_HEAP_TABLE_ADDR;
     kernel_heap_table.total = total_heap_entries;
 
 

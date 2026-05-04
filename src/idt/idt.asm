@@ -14,7 +14,7 @@ enable_interrupts:
     ret
 
 disable_interrupts:
-    sti
+    cli
     ret
 
 idt_load:

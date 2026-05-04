@@ -7,11 +7,32 @@ BITS 16                  ; 16 bit architecture
 CODE_SEG equ gdt_code - gdt_start       ; Offset of CS
 DATA_SEG equ gdt_data - gdt_start       ; Offset of DS, ES, SS, etc
 
-; Setting a dummy BIOS Parameter Block
-_start:
-    jmp short start
-    nop
-times 33 db 0            ; 33 bytes of 0's padding for the BPB filling
+jmp short start
+nop
+
+; FAT16 Header
+; Boot Sector -> Reserved Space (kernel data)
+OEMIdentifier           db 'SAMOS   '
+BytesPerSector          dw 0x200            ; 512 bytes per sector
+SectorsPerCluster       db 0x80             
+ReservedSectors         dw 200              ; Depends on the kernel size - whole kernel will be present in thee reserved sector
+FATCopies               db 0x02
+RootDirEntries          dw 0x40
+NumSectors              dw 0x00
+MediaType               db 0xF8
+SectorsPerFat           dw 0x100
+SectorsPerTrack         dw 0x20
+NumberOfHeads           dw 0x40
+HiddenSectors           dd 0x00
+SectorsBig              dd 0x773594
+
+; Extended BPB (Dos 4.0)
+DriveNumber             db 0x80
+WinNTBit                db 0x00
+Signature               db 0x29
+VolumeID                dd 0xD105
+VolumeIDString          db 'SAMOS BOOT '
+SystemIDString          db 'FAT16   '
 
 start:                   ; start label
     jmp 0:step2

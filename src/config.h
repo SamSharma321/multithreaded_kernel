@@ -7,8 +7,12 @@
 #define KERNEL_DATA_SELECTOR        0x10
 
 /* Heap related macros */
-#define SAMOS_HEAP_SIZE_BYTES       1048577600  // This would be dynamic based on RAM size in modern OS
+#define SAMOS_HEAP_SIZE_BYTES       (100 * 1024 * 1024)  // This would be dynamic based on RAM size in modern OS
 #define SAMOS_HEAP_BLOCK_SIZE       4096
 #define SAMOS_HEAP_START_ADDR       0x01000000
 #define SAMOS_HEAP_TABLE_ADDR       0x00007E00
+
+#define SAMOS_SECTOR_SIZE           512
+#define SAMOS_MAX_FILESYSTEMS       12
+#define SAMOS_MAX_FILE_DESCRIPTORS  512
 #endif

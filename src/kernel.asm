@@ -23,8 +23,7 @@ _start:
 
     ; Remap the master Programmable Interrupt controller (PIC)
     mov al, 00010001b
-    out 0x20, al        ; Tell master PIC
-
+    out 0x20, al        ; Start master PIC initialization
     mov al, 0x20        ; Interrupt 0x20 is where master ISR should start
     out 0x21, al
     

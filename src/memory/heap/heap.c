@@ -5,7 +5,7 @@
 #include "memory/memory.h"
 
 static bool validate_alignment(void* ptr) {
-    return ((unsigned int)ptr % SAMOS_HEAP_BLOCK_SIZE != 0);
+    return (((unsigned int)ptr % SAMOS_HEAP_BLOCK_SIZE) != 0);
 }
 
 static int heap_validate_table(void* start, void* end, struct heap_table* h_table) {
