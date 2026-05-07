@@ -11,3 +11,4 @@ build/memory/paging/paging.asm.o
 build/idt/idt.o
 build/idt/idt.o
 build/memory/paging.o
+/build
