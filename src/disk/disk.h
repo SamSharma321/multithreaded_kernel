@@ -13,9 +13,12 @@ operations on the host system, typically using file-based images */
 typedef unsigned int SAMOS_DISK_TYPE;
 
 struct disk {
+    int id;
     SAMOS_DISK_TYPE type;
     int sector_size;
     struct filesystem* filesystem;      // Filesystem for th created disk
+    // Private data of the file system
+    void* fs_private;
 };
 
 

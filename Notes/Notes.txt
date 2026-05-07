@@ -20,3 +20,6 @@ GDB:
 * Using gdb - loading symbols command: add-symbol-file ../build/kernelfull.o 0x100000 -> 0x100000 is staring address of kernel file
 * break _start -> stops at _start routine
 * target remote | qemu-system-x86_64 -hda ./os.bin -gdb stdio -S
+* break <function_name>
+* next -> continues to next line
+* print <variable_name> -> us *<pointer_name> to see what it points to
