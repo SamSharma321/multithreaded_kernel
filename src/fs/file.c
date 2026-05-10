@@ -75,7 +75,7 @@ static int file_new_descriptor(struct file_descriptor** desc_out) {
 }
 
 static struct file_descriptor* file_get_descriptor(int fd) {
-    if (fd < 1 || fd > SAMOS_MAX_FILE_DESCRIPTORS) {
+    if (fd < 1 || fd >= SAMOS_MAX_FILE_DESCRIPTORS) {
         return 0;
     }
     // Descriptor index starts at 1
@@ -161,4 +161,36 @@ out:
 
     return res;
 }
+
+int fread(void* ptr, uint32_t size, uint32_t nmemb, int fd){
+    int res = 0;
+    if (size == 0 || nmemb == 0 || fd < 1) {
+        res = -EINVARG;
+        goto out;
+    }
+
+    struct file_descriptor* desc = file_get_descriptor(fd);
+    if (!desc) {
+        res = -ENOMEM;
+        goto out;
+    }
+
+    res = desc->filesystem->read(desc->disk, desc->private, size, nmemb, (char*)ptr);
+out:
+    return res;
+}
+
+/* Set the cursor or pointer to anywhere inside the file - lower implementation by the respective filesystem */
+int fseek(int fd, int offset, FILE_SEEK_MODE whence) {
+    int res = 0;
+    struct file_descriptor* desc = file_get_descriptor(fd);
+    if (!desc) {
+        res = -EIO;
+        goto out;
+    }
+    res = desc->filesystem->seek(desc->private, offset, whence);
+out:
+    return res;
+}
+
 

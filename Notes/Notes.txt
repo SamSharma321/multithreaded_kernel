@@ -23,3 +23,16 @@ GDB:
 * break <function_name>
 * next -> continues to next line
 * print <variable_name> -> us *<pointer_name> to see what it points to
+
+Procedure to read from a file using fread() and fopen()
+    int fd = fopen("0:/hello.txt","r");
+    if (fd) {
+        print("Opened hello.txt\n");
+        char buf[14];
+        fseek(fd, 2, SEEK_SET);
+        fread(buf, 11, 1, fd);
+        buf[13] = 0x00;
+        print(buf);
+    }
+
+

@@ -108,10 +108,15 @@ void kernel_main() {
     enable_virtual_addressing();
     // enable interrupts
     enable_interrupts();
-    /* Create Root path */
-    struct path_root* root = pathparser_parse("0:/bin/shell.exe", NULL);
-    if (root) {
-        print("Root path created (0)\n");
+    int fd = fopen("0:/hello.txt","r");
+    if (fd) {
+        print("Opened hello.txt\n");
+        char buf[14];
+        fseek(fd, 2, SEEK_SET);
+        fread(buf, 11, 1, fd);
+        buf[13] = 0x00;
+        print(buf);
     }
+    while(1) {}
     return;
 }

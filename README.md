@@ -1,6 +1,6 @@
 # Multithreaded Kernel - SAMOS
 
-SAMOS is a small educational x86 kernel project. It boots from a custom boot
+SAMOS is a linux-based x86 multithreaded kernel project. It boots from a custom boot
 sector, switches the CPU into 32-bit protected mode, loads a freestanding C
 kernel, initializes basic kernel services, enables paging, and begins handling
 hardware interrupts.
@@ -8,6 +8,146 @@ hardware interrupts.
 The project is intentionally low-level: most of the interesting work happens by
 talking directly to x86 CPU registers, VGA memory, ATA disk ports, and the
 Programmable Interrupt Controller.
+
+**Table of Contents:**
+- [Requirements](#requirements)
+- [Getting Started](#getting-started)
+- [Building](#building)
+- [Running](#running)
+- [Debugging](#debugging)
+- [Current Features](#current-features)
+
+## Requirements
+
+### System Requirements
+
+- **Operating System:** Linux, macOS, or Windows (with WSL2)
+- **Architecture:** x86_64 (to compile for x86/i686 target)
+- **RAM:** Minimum 2 GB recommended
+- **Disk Space:** ~500 MB for toolchain and build artifacts
+
+### Required Software
+
+1. **NASM (Netwide Assembler)** - for assembling boot sector and assembly code
+   - Version: 2.13 or later
+   - Website: https://www.nasm.us/
+
+2. **GCC (with i686-elf support)** or **i686-elf-gcc cross-compiler**
+   - For 32-bit x86 freestanding kernel compilation
+   - Recommended: Use i686-elf cross-compiler toolchain
+
+3. **GNU Binutils (ld, objdump, etc.)** 
+   - Required for linking object files
+
+4. **GNU Make**
+   - For build automation
+
+5. **QEMU** (for running and testing)
+   - Version: 4.0 or later
+   - Specifically: `qemu-system-x86_64` command
+   - Website: https://www.qemu.org/
+
+6. **GDB** (optional, for debugging)
+   - GNU Debugger for kernel debugging with QEMU
+
+7. **WSL2 or Docker** (optional, for Windows users)
+   - For running Linux development environment on Windows
+
+### Platform Support
+
+| Platform | Status | Notes |
+|----------|--------|-------|
+| **Linux** | ✅ Full Support | Recommended for development |
+| **macOS** | ✅ Full Support | Use Homebrew for package management |
+| **Windows (WSL2)** | ✅ Full Support | Recommended setup for Windows |
+| **Windows (Native)** | ⚠️ Limited | Not recommended; use WSL2 instead |
+
+## Getting Started
+
+### Installation
+
+#### macOS (Using Homebrew)
+
+```bash
+# Install required tools
+brew install nasm qemu
+brew install binutils i686-elf-gcc
+
+# Verify installations
+nasm -version
+qemu-system-x86_64 --version
+i686-elf-gcc --version
+```
+
+#### Linux (Ubuntu/Debian)
+
+```bash
+# Install required tools
+sudo apt-get update
+sudo apt-get install -y nasm qemu-system-x86 build-essential
+
+# Install i686-elf toolchain (if not available via package manager)
+sudo apt-get install -y gcc-i686-linux-gnu binutils-i686-linux-gnu
+# OR build from source (see notes below)
+```
+
+#### Linux (Fedora/RHEL)
+
+```bash
+# Install required tools
+sudo dnf install -y nasm qemu-system-x86 gcc binutils
+
+# For i686-elf cross-compiler
+sudo dnf install -y mingw32-gcc mingw32-binutils
+```
+
+#### Windows (WSL2)
+
+```bash
+# In WSL2 terminal (Ubuntu):
+sudo apt-get update
+sudo apt-get install -y nasm qemu-system-x86 build-essential gcc-i686-linux-gnu
+
+# Verify QEMU installation
+qemu-system-x86_64 --version
+```
+
+### Cross-Compiler Setup (Optional but Recommended)
+
+For best results, set up the i686-elf cross-compiler toolchain:
+
+**Option 1: Pre-built binaries**
+
+Visit: https://github.com/lordmilko/i686-elf-tools/releases
+
+**Option 2: Build from source**
+
+```bash
+# Create installation directory
+mkdir -p $HOME/opt/cross
+export PREFIX="$HOME/opt/cross"
+export TARGET=i686-elf
+export PATH="$PREFIX/bin:$PATH"
+
+# Download and build binutils and GCC
+# (See Notes/Assembler_Installation_Guide.txt for detailed steps)
+```
+
+### Configure Environment
+
+Add the following to your shell profile (`~/.bashrc`, `~/.zshrc`, etc.):
+
+```bash
+export PREFIX="$HOME/opt/cross"
+export TARGET=i686-elf
+export PATH="$PREFIX/bin:$PATH"
+```
+
+Then reload:
+
+```bash
+source ~/.bashrc  # or ~/.zshrc for macOS
+```
 
 ## Current Features
 
@@ -226,67 +366,278 @@ Writing `0x20` to `0x1F7` issues the ATA `READ SECTORS` command.
 
 ## Building
 
-Run:
+### Prerequisites Check
 
-```sh
+Before building, verify all tools are installed:
+
+```bash
+# Check NASM
+nasm -version
+
+# Check GCC (either native or cross-compiler)
+gcc -m32 --version  # or i686-elf-gcc --version
+
+# Check LD (linker)
+ld --version
+
+# Check Make
+make --version
+```
+
+### Quick Build
+
+Run the build script:
+
+```bash
 ./build.sh
 ```
 
-The script sets:
+This script:
+1. Sets cross-compiler environment variables
+2. Cleans previous build artifacts
+3. Builds boot sector, kernel objects, and disk image
+4. Output: `bin/os.bin` (bootable disk image)
 
-```sh
-PREFIX="$HOME/opt/cross"
-TARGET=i686-elf
-PATH="$PREFIX/bin:$PATH"
-```
+### Manual Build Steps
 
-Then it runs:
+If you prefer to build step-by-step:
 
-```sh
+```bash
+# Set environment (if not already set)
+export PREFIX="$HOME/opt/cross"
+export TARGET=i686-elf
+export PATH="$PREFIX/bin:$PATH"
+
+# Clean previous builds
 make clean
+
+# Build all components
 make all
+
+# Output files
+ls -la bin/os.bin      # Final bootable image
+ls -la bin/boot.bin    # Boot sector (512 bytes)
+ls -la bin/kernel.bin  # Kernel binary
 ```
+
+### Build System Details
+
+The Makefile:
+- Prefers `i686-elf-gcc` when available
+- Falls back to `gcc -m32` if cross-compiler not found
+- Uses NASM for assembly files (`.asm`)
+- Uses GCC for C files (`.c`)
+- Uses GNU LD for linking
+- Outputs final image: `bin/os.bin`
+
+### Build Configuration
+
+Edit these files to customize the build:
+
+- `Makefile` - Build rules and compiler flags
+- `src/config.h` - Kernel constants (heap size, interrupts, etc.)
+- `src/linker.ld` - Kernel memory layout
+- `build.sh` - Build script and environment setup
 
 The Makefile prefers `i686-elf-gcc` when available. If it is not found, it falls
 back to `gcc -m32`.
 
-The final disk image is:
-
-```text
-bin/os.bin
-```
-
 ## Running
 
-With QEMU installed, run:
+### Quick Start
 
-```sh
+With QEMU installed and kernel built, run:
+
+```bash
 qemu-system-x86_64 -hda ./bin/os.bin
 ```
 
-The boot image is built by concatenating:
+This launches the kernel in QEMU emulator. You should see:
+- Boot sector initialization
+- Kernel mode setup
+- VGA text output: "BIOS Execution start..."
+- Interrupt handling demonstrations
 
-1. `bin/boot.bin`
-2. `bin/kernel.bin`
-3. zero padding for extra disk sectors
+### QEMU Options
+
+For more control, use these flags:
+
+```bash
+# Basic execution (512 MB RAM, 1 CPU)
+qemu-system-x86_64 -hda ./bin/os.bin
+
+# With more RAM
+qemu-system-x86_64 -hda ./bin/os.bin -m 1G
+
+# With multiple CPU cores
+qemu-system-x86_64 -hda ./bin/os.bin -smp 4
+
+# With VNC display (for headless systems)
+qemu-system-x86_64 -hda ./bin/os.bin -vnc :0
+
+# Verbose output
+qemu-system-x86_64 -hda ./bin/os.bin -d int,cpu_reset
+
+# Monitor console (Ctrl+Alt+2 to access)
+qemu-system-x86_64 -hda ./bin/os.bin -monitor stdio
+```
+
+### Exit QEMU
+
+- Press `Ctrl+Alt+Q` to quit
+- Or use `Ctrl+C` in the terminal
+- Or type `quit` in the monitor console (if using `-monitor stdio`)
+
+### Disk Image Details
+
+The boot image (`bin/os.bin`) is built by concatenating:
+
+1. Boot sector (`bin/boot.bin`) - 512 bytes
+2. Kernel image (`bin/kernel.bin`) - variable size
+3. Zero padding - extra disk sectors (16 MB)
 
 ## Debugging
 
-The comments in `build.sh` include a GDB/QEMU flow:
+### Prerequisites for Debugging
 
-```text
-cd bin
-gdb
-add-symbol-file ../build/kernelfull.o 0x100000
-target remote | qemu-system-x86_64 -hda os.bin -gdb stdio -S
+Ensure you have GDB installed:
+
+```bash
+# macOS
+brew install gdb
+
+# Linux (Ubuntu/Debian)
+sudo apt-get install -y gdb
+
+# Linux (Fedora)
+sudo dnf install -y gdb
 ```
 
-Useful early breakpoints include:
+### GDB + QEMU Debugging
+
+**Terminal 1 - Start QEMU in Debug Mode:**
+
+```bash
+qemu-system-x86_64 -hda ./bin/os.bin -gdb stdio -S
+```
+
+Flags explained:
+- `-gdb stdio` - Accept GDB connections on stdio
+- `-S` - Pause CPU at startup (don't auto-run)
+
+**Terminal 2 - Connect with GDB:**
+
+```bash
+cd bin
+gdb
+
+# In GDB shell:
+(gdb) add-symbol-file ../build/kernelfull.o 0x100000
+(gdb) target remote | qemu-system-x86_64 -hda os.bin -gdb stdio -S
+(gdb) break kernel_main
+(gdb) c
+```
+
+### Useful GDB Commands
+
+```gdb
+# Breakpoints
+break kernel.c:80        # Break at line 80 in kernel.c
+break kernel_main        # Break at kernel_main function
+continue (c)             # Continue execution after break
+delete 1                 # Delete breakpoint 1
+
+# Viewing code
+layout asm               # Show disassembly view
+layout src               # Show source code view
+layout split             # Show both source and asm
+
+# Examining memory/registers
+info registers           # Show all CPU registers
+x/10x $esp              # Examine 10 hex words at ESP
+x/s 0xb8000             # Examine string at VGA buffer
+print/x $eax            # Print EAX in hex
+
+# Single stepping
+stepi (si)              # Step one instruction
+step (s)                # Step one source line
+nexti (ni)              # Next instruction (skip functions)
+next (n)                # Next source line
+
+# Stack traces
+backtrace (bt)          # Show call stack
+frame 0                 # Select frame 0
+
+# Kernel dumps
+info mem                # Show memory layout
+```
+
+### Common Debugging Scenarios
+
+**Debugging boot process:**
+
+```gdb
+break src/boot/boot.asm:1  # Early breakpoint in boot
+c                          # Continue to breakpoint
+layout asm                 # View assembly
+si                        # Step through boot code
+```
+
+**Debugging kernel initialization:**
 
 ```gdb
 break kernel_main
-break kernel.c:80
+c
+list                  # Show source around breakpoint
+step                  # Step into kernel_main
 ```
+
+**Inspecting VGA output:**
+
+```gdb
+# VGA buffer starts at 0xB8000
+x/80x 0xb8000       # Show first 80 characters
+x/s 0xb8000         # Show as string
+```
+
+**Inspecting paging structures:**
+
+```gdb
+# Page directory at 0x01000000
+x/1024x 0x01000000  # Show page directory entries
+```
+
+### Debugging Tips
+
+1. **Rebuild with debug symbols** before debugging:
+   ```bash
+   make clean
+   make all
+   # Debug symbols are included in kernelfull.o
+   ```
+
+2. **Use conditional breakpoints** for loops:
+   ```gdb
+   break kernel.c:50 if i > 100
+   ```
+
+3. **Disable/enable breakpoints** for cleanup:
+   ```gdb
+   disable 1     # Disable breakpoint 1
+   enable 1      # Re-enable it
+   ```
+
+4. **Watch for segment register changes** when debugging memory:
+   ```gdb
+   break src/kernel.asm:50  # Early segment setup
+   ```
+
+### Kernel-Specific Debugging Challenges
+
+- **Paging enabled?** Virtual addresses may differ from physical
+- **Interrupts disabled?** Debugging may seem frozen; check IF flag
+- **Stack issues?** Check SS and SP in `src/kernel.asm`
+- **IDT not loaded?** Interrupts will triple-fault; check `idt_init()`
 
 ## Notes and Learning Material
 
@@ -318,3 +669,212 @@ minimal:
 - Paging structures must be page-aligned and visible through the active address
   mapping.
 - Generated files in `bin/` and `build/` can be recreated with `./build.sh`.
+
+## Troubleshooting
+
+### Build Issues
+
+**Problem:** `command not found: nasm`
+```bash
+# Solution: Install NASM
+brew install nasm          # macOS
+sudo apt-get install nasm  # Linux (Debian/Ubuntu)
+```
+
+**Problem:** `i686-elf-gcc: command not found`
+```bash
+# Solution 1: Install cross-compiler
+brew install i686-elf-gcc  # macOS
+
+# Solution 2: Use system GCC with -m32 flag
+gcc -m32 --version
+
+# Solution 3: Build from source
+# See: Notes/Assembler_Installation_Guide.txt
+```
+
+**Problem:** `error: conflicting types for 'function_name'`
+```bash
+# Solution: Check header includes and function declarations
+grep -r "function_name" src/
+# Ensure consistent declarations in .h and .c files
+```
+
+**Problem:** Linker errors or missing symbols
+```bash
+# Solution: Rebuild from scratch
+make clean
+make all
+
+# If still failing, check linker script
+cat src/linker.ld
+```
+
+### Runtime Issues
+
+**Problem:** QEMU starts but kernel doesn't load
+```bash
+# Check disk image was built
+ls -la bin/os.bin
+
+# Try verbose QEMU output
+qemu-system-x86_64 -hda ./bin/os.bin -d int,cpu_reset
+```
+
+**Problem:** Triple fault or immediate crash
+```bash
+# Check:
+# 1. IDT is properly initialized (idt_init in kernel.c)
+# 2. Interrupt handlers are defined (src/idt/idt.asm)
+# 3. Segment registers set correctly (src/kernel.asm)
+
+# Debug with GDB:
+gdb
+add-symbol-file build/kernelfull.o 0x100000
+target remote | qemu-system-x86_64 -hda bin/os.bin -gdb stdio -S
+break kernel_main
+c
+```
+
+**Problem:** No output on screen
+```bash
+# Check VGA buffer isn't overwritten
+# Add debug statements in kernel_main()
+# Verify terminal_initialize() is called first in kernel_main()
+
+# Try different QEMU video options:
+qemu-system-x86_64 -hda bin/os.bin -vga std
+qemu-system-x86_64 -hda bin/os.bin -vga cirrus
+```
+
+**Problem:** Keyboard input not working
+```bash
+# Check:
+# 1. PIC is remapped (IRQ1 -> 0x21)
+# 2. Keyboard handler reads port 0x60
+# 3. EOI is sent to PIC after interrupt
+
+# Add debug output in keyboard handler
+# Check src/idt/idt.c for keyboard setup
+```
+
+## Useful Commands Reference
+
+### Build & Clean
+
+```bash
+make              # Full rebuild
+make clean        # Remove build artifacts
+./build.sh        # Clean + build with env setup
+```
+
+### Inspection
+
+```bash
+# Check object files
+objdump -t build/kernel.asm.o    # Symbol table
+objdump -d build/kernel.o         # Disassembly
+objdump -s build/kernel.o         # Section contents
+
+# Check disk image
+file bin/os.bin
+ls -lah bin/
+hexdump -C bin/boot.bin | head -20
+
+# Check generated assembly
+nasm -f bin src/boot/boot.asm -o /tmp/test.bin -l /tmp/test.lst
+cat /tmp/test.lst
+```
+
+### Testing
+
+```bash
+# Run kernel in QEMU
+qemu-system-x86_64 -hda ./bin/os.bin
+
+# Run with GDB
+qemu-system-x86_64 -hda ./bin/os.bin -gdb stdio -S
+
+# Run with extended debugging
+qemu-system-x86_64 -hda ./bin/os.bin -d int,cpu_reset -D qemu.log
+
+# Run with serial output
+qemu-system-x86_64 -hda ./bin/os.bin -serial stdio
+```
+
+### Development Workflow
+
+```bash
+# Watch-style development loop (repeat in new terminal)
+while true; do clear; make all 2>&1 | head -50; sleep 2; done
+
+# Rebuild specific module
+make clean
+make ./build/disk/disk.o
+
+# Check for unused variables/functions
+make clean && make all 2>&1 | grep -i "warning"
+```
+
+## Documentation References
+
+### Kernel Development Resources
+
+- **OSDev.org:** https://wiki.osdev.org/
+  - Excellent tutorials on bootloaders, kernels, and x86 architecture
+  
+- **Intel x86 Manuals:** https://www.intel.com/content/www/us/en/developer/articles/technical/intel-sdm.html
+  - Official CPU reference (Volume 2: Instruction Set Reference)
+  - Volume 3: System Programming
+  
+- **NASM Manual:** https://www.nasm.us/doc/
+  - Assembly language syntax and directives
+  
+- **GCC for i686-elf:** https://gcc.gnu.org/
+  - Cross-compiler documentation
+  
+- **QEMU Documentation:** https://www.qemu.org/docs/
+  - Emulator options and debugging
+
+### Project-Specific Documentation
+
+- `Notes/DISKS.md` - Disk and filesystem architecture
+- `Notes/Assembler_Installation_Guide.txt` - Toolchain setup
+- `Notes/Notes.txt` - Development notes and findings
+- `src/config.h` - Kernel configuration constants
+- `src/linker.ld` - Memory layout and linking details
+
+## Contributing & Next Steps
+
+### Areas for Enhancement
+
+1. **Scheduler & Multithreading**
+   - Implement process/thread scheduling
+   - Context switching on timer interrupt
+
+2. **Filesystem**
+   - Complete FAT16 filesystem implementation
+   - File read/write operations
+
+3. **User Space**
+   - Ring 3 privilege level support
+   - System calls interface
+
+4. **Device Support**
+   - SATA/AHCI disk interface
+   - USB device handling
+   - Network stack (IP/TCP)
+
+### Development Tips
+
+- Keep assembly code minimal and well-commented
+- Test incrementally: add one feature, test thoroughly
+- Use GDB extensively for complex debugging
+- Document changes and architectural decisions
+- Reference OSDev.org for best practices
+- Study real kernel sources (Linux, xv6) for inspiration
+
+## License & Attribution
+
+This is an educational project inspired by x86 kernel development practices.
+For learning purposes. See Notes/ for resources and references.
