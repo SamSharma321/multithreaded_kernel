@@ -22,15 +22,28 @@ enum {
     
 };
 
+enum {
+    FILE_STAT_READ_ONLY = 1u,
+};
 
 struct disk;
 
+typedef unsigned int FILE_STAT_FLAGS;
 // Function pointer typedef retrntype (* function_ptr_name) (params...)
 typedef void*(*FS_OPEN_FUNCTION)(struct disk* disk, struct part_path* path, FILE_MODE mode);
 typedef int (*FS_READ_FUNCTION)(struct disk* disk, void* private, uint32_t size, uint32_t nmemb, char* out);
 // Check if the provided disk has the required sector data and its validity
 typedef int (*FS_RESOLVE_FUNCTION)(struct disk* disk);
+
+struct file_stat {
+    FILE_STAT_FLAGS flags;
+    uint32_t files;
+    uint32_t filesize;
+};
+typedef int (*FS_STAT_FUNCTION)(struct disk* disk, void* private, struct file_stat* stat);
+typedef int (*FS_CLOSE_FUNCTION)(void* private);
 typedef int (*FS_SEEK_FUNCTION)(void* private, uint32_t offset, FILE_SEEK_MODE seek_mode);
+
 
 // Each file system in the kernel should have this structure defined
 struct filesystem {
@@ -39,9 +52,10 @@ struct filesystem {
     FS_OPEN_FUNCTION open;
     FS_READ_FUNCTION read;
     FS_SEEK_FUNCTION seek;
+    FS_STAT_FUNCTION stat;
+    FS_CLOSE_FUNCTION close;
     char name[20];
 };
-
 
 struct file_descriptor {
     // The descriptor index
@@ -60,5 +74,7 @@ int fread(void* ptr, uint32_t size, uint32_t nmemb, int fd);
 void fs_insert_filesystem(struct filesystem* filesystem);
 struct filesystem* fs_resolve(struct disk* disk);
 int fseek(int fd, int offset, FILE_SEEK_MODE whence);
+int fstat(int fd, struct file_stat* stat);
+int fclose(int fd);
 
 #endif

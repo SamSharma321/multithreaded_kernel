@@ -110,12 +110,10 @@ void kernel_main() {
     enable_interrupts();
     int fd = fopen("0:/hello.txt","r");
     if (fd) {
-        print("Opened hello.txt\n");
-        char buf[14];
-        fseek(fd, 2, SEEK_SET);
-        fread(buf, 11, 1, fd);
-        buf[13] = 0x00;
-        print(buf);
+        struct file_stat s;
+        fstat(fd, &s);
+        fclose(fd);
+        print("Test Completed!\n");
     }
     while(1) {}
     return;

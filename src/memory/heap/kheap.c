@@ -26,6 +26,7 @@ void kheap_init() {
     }
 }
 
+/* Kernel Malloc - only sets memory allocation in BLOCK_SIZE (4096 bytes) */
 void* kmalloc(size_t size) {
     return heap_malloc(&kernel_heap, size);
 }

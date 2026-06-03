@@ -19,7 +19,7 @@ static int heap_validate_table(void* start, void* end, struct heap_table* h_tabl
 }
 
 int heap_create(struct heap* heap, void* start_ptr, void* end, struct heap_table* h_table) {
-    if ((heap == NULL) || (start_ptr == NULL) || (h_table == NULL)) {
+    if ((heap == NULL) || (start_ptr == NULL) || (h_table == NULL) || ((h_table->entries == NULL))) {
         return -EINVARG;
     }
     if (validate_alignment(start_ptr) || validate_alignment(end)) {
@@ -30,7 +30,7 @@ int heap_create(struct heap* heap, void* start_ptr, void* end, struct heap_table
     }
 
     memset(heap, 0, sizeof(struct heap));
-    heap->addr = start_ptr;
+    heap->saddr = start_ptr;
     heap->h_table = h_table;
 
     int res = heap_validate_table(start_ptr, end, h_table);
@@ -76,13 +76,19 @@ static int heap_get_start_block(struct heap* heap, uint32_t total_blocks) {
         return -ENOMEM;
     }
 
+    if (bc != total_blocks) {
+        return -ENOMEM;
+    }
+
     return bs;
 }
 
-static void* heap_block_to_address(struct heap* heap, uint32_t start_block) {
-    return (heap->addr) + (start_block * SAMOS_HEAP_BLOCK_SIZE);
+/* Get the address of the total allocated memory (block_size = 4096) */
+static void* heap_block_to_address(struct heap* heap, int block) {
+    return (heap->saddr) + (block * SAMOS_HEAP_BLOCK_SIZE);
 }
 
+/* Mark all blocks which have been used as taken. */
 static void heap_mark_blocks_taken(struct heap* heap, int start_block, uint32_t total_blocks) {
     struct heap_table* table = heap->h_table;
 
@@ -107,9 +113,12 @@ void* heap_malloc_blocks(struct heap* heap, uint32_t total_blocks) {
 }
 
 void* heap_malloc(struct heap* heap, size_t size) {
+    // Invalid check
+    if (size == 0)
+        return 0;
+
     size_t aligned_size = heap_align_value_to_upper(size);
     uint32_t total_blocks = aligned_size / SAMOS_HEAP_BLOCK_SIZE;
-
     return heap_malloc_blocks(heap, total_blocks);
 }
 
@@ -117,7 +126,7 @@ void heap_free(struct heap* heap, void* ptr) {
     if (ptr == NULL)
         return; // Do nothing
 
-    if (ptr < heap->addr)
+    if (ptr < heap->saddr)
         return;
 
     if (validate_alignment(ptr)) {
@@ -125,7 +134,7 @@ void heap_free(struct heap* heap, void* ptr) {
     }
 
     // get the table entry start position
-    int start_index = ((uintptr_t)ptr - (uintptr_t)heap->addr) / SAMOS_HEAP_BLOCK_SIZE;
+    int start_index = ((uintptr_t)ptr - (uintptr_t)heap->saddr) / SAMOS_HEAP_BLOCK_SIZE;
     if (start_index < 0 || (size_t)start_index >= heap->h_table->total) {
         return;
     }

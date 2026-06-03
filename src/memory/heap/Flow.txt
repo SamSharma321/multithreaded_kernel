@@ -1,0 +1,6 @@
+Flow
+1. Create the boot process in ASM
+2. Create all required functionality: IO, memcpy, malloc, freestring, reset handler, heaap, filesystem.
+3. Implement fat16 filesystem.
+4. Implement fstat function - both in the filesystem abstract layer and fat16 layer - provides a the info on the file chosen (file size and so on)
+5. 
